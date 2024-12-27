@@ -1,97 +1,102 @@
 import React, { useState } from "react";
-import "./Login.css";
+import axios from "axios";
 
-const Login = () => {
+function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [token, setToken] = useState(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError(""); // 에러 초기화
-
-    // 입력값 검증
-    if (!email || !password) {
-      setError("이메일과 비밀번호를 입력해주세요.");
-      return;
-    }
-
-    try {
-      // 예시 로그인 API 요청 (백엔드 URL 수정 필요)
-      const response = await fetch("/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        throw new Error("로그인 실패! 이메일 또는 비밀번호를 확인하세요.");
-      }
-
-      const data = await response.json();
-      setToken(data.token);
-
-      // 서버에서 반환된 토큰 처리
-      const token = data.token; // 서버가 반환하는 토큰
-      if (!token) {
-        throw new Error(
-          "로그인 중 문제가 발생했습니다. 토큰을 찾을 수 없습니다."
-        );
-      }
-
-      alert(`로그인 성공! 환영합니다, ${data.username}님.`);
-      // 로그인 성공 시 로컬스토리지나 세션 저장 등 추가 처리 가능
-    } catch (err) {
-      setError(err.message || "로그인 중 오류가 발생했습니다.");
+  const handleLogin = () => {
+    if (email === "") {
+      alert("이메일을 입력해주세요.");
+    } else if (password === "") {
+      alert("비밀번호를 입력해주세요.");
+    } else {
+      axios
+        .post("https://project-be.site/auth/login", {
+          email: email,
+          password: password,
+        })
+        .then((response) => {
+          let bearer_token = response.headers.bearer_token;
+          localStorage.setItem("bearer_token", bearer_token); //테스트 토큰 저장
+          console.log(bearer_token);
+          console.log(
+            "bearer_token이 로컬 스토리지에 저장되었습니다:",
+            bearer_token
+          );
+          alert(email + "님 환영합니다.");
+          window.location.href = "/"; // 로그인 성공 후 리다이렉트
+        })
+        .catch((error) => {
+          console.error("로그인 오류:", error);
+          alert(
+            "이메일 또는 비밀번호를 잘못 입력했습니다. 입력하신 내용을 다시 확인해주세요."
+          );
+        });
     }
   };
 
   return (
-    <div className="login-container">
-      <h2 className="login-title">LOGIN</h2>
-      <form className="login-form" onSubmit={handleSubmit}>
-        {error && <p className="error-message">{error}</p>}
-        <div className="input-group">
-          <label htmlFor="username">이메일</label>
-          <input
-            type="text"
-            id="email"
-            name="email"
-            placeholder="이메일"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-        <div className="input-group">
-          <label htmlFor="password">비밀번호</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            placeholder="비밀번호"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <div className="checkbox-group">
-          <input type="checkbox" id="auto-login" name="auto-login" />
-          <label htmlFor="auto-login">자동로그인</label>
-        </div>
-        <button type="submit" className="login-button">
+    <div style={styles.container}>
+      <form style={styles.form}>
+        <h2>로그인</h2>
+        <input
+          type="email"
+          placeholder="이메일"
+          value={email}
+          저
+          onChange={(e) => setEmail(e.target.value)}
+          style={styles.input}
+        />
+        <input
+          type="password"
+          placeholder="패스워드"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={styles.input}
+        />
+        <button type="button" onClick={handleLogin} style={styles.button}>
           로그인
-        </button>
-        <div className="help-links">
-          <a href="/find-id">이메일찾기</a>
-          <a href="/find-password">비밀번호찾기</a>
-          <a href="/signup">회원가입</a>
-        </div>
-        <button type="button" className="guest-order-button">
-          비회원 주문조회
         </button>
       </form>
     </div>
   );
+}
+
+const styles = {
+  container: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    height: "100vh",
+    backgroundColor: "#f5f5f5",
+  },
+  form: {
+    backgroundColor: "#fff",
+    padding: "20px",
+    borderRadius: "8px",
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+    width: "300px",
+    textAlign: "center",
+  },
+  input: {
+    width: "100%",
+    padding: "10px",
+    margin: "10px 0",
+    border: "1px solid #ddd",
+    borderRadius: "4px",
+    fontSize: "16px",
+  },
+  button: {
+    width: "100%",
+    padding: "10px",
+    backgroundColor: "#007bff",
+    color: "#fff",
+    border: "none",
+    borderRadius: "4px",
+    fontSize: "16px",
+    cursor: "pointer",
+  },
 };
 
 export default Login;

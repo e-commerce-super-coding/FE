@@ -14,109 +14,110 @@ const Cart = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
+ // 토큰 체크 유틸리티 함수
+  const checkToken = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('로그인이 필요한 서비스입니다.');
+      navigate('/login');
+      return false;
+    }
+    return token;
+  };
+
   useEffect(() => {
     const fetchCartItems = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        
-        if (!token) {
-          setIsLoading(false);
-          return;
-        }
+      const token = checkToken();
+      if (!token) return;
 
-        const response = await axios.get('/api/cart', {
+      try {
+        const response = await axios.get('https://project-be.site/api/mypage/getCartItems', {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
 
-        const formattedItems = response.data.map(item => ({
-          id: item.cart_id,
-          bookId: item.book_id,
-          title: item.book_title,
-          price: item.book_price,
-          quantity: item.quantity
+        if (!response.data || !response.data.cartItems) {
+          throw new Error('장바구니 데이터를 불러올 수 없습니다.');
+        }
+
+        const formattedItems = response.data.cartItems.map(item => ({
+          id: item.cartId,
+          bookId: item.bookId,
+          title: item.title,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.bookImage,
+          publisher: item.publisher,
+          author: item.author
         }));
 
         setCartItems(formattedItems);
       } catch (err) {
+        console.error('장바구니 정보 조회 실패:', err);
+        if (err.response?.status === 401) {
+          alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
+        }
         setError('장바구니 정보를 불러오는데 실패했습니다.');
-        console.error('Error fetching cart items:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchCartItems();
-  }, []);
+  }, [navigate]);
 
   const updateItemQuantity = async (itemId, newQuantity) => {
+    const token = checkToken();
+    if (!token) return;
+
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`/api/cart/${itemId}`, 
-        { quantity: newQuantity },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+      await axios.put('https://project-be.site/api/mypage/putCartOption', 
+        { cartId: itemId, quantity: newQuantity },
+        { headers: { Authorization: `Bearer ${token}` }}
       );
 
       setCartItems(cartItems.map(item =>
         item.id === itemId ? { ...item, quantity: newQuantity } : item
       ));
     } catch (err) {
-      console.error('Error updating quantity:', err);
+      if (err.response?.status === 401) {
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+      console.error('수량 변경 실패:', err);
       alert('수량 변경에 실패했습니다.');
     }
   };
 
-  const handleSelectedDelete = async () => {
-    if (selectedItems.length === 0) {
-      alert('선택된 상품이 없습니다.');
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem('token');
-      await Promise.all(
-        selectedItems.map(itemId =>
-          axios.delete(`/api/cart/${itemId}`, {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          })
-        )
-      );
-
-      setCartItems(cartItems.filter(item => !selectedItems.includes(item.id)));
-      setSelectedItems([]);
-    } catch (err) {
-      console.error('Error deleting items:', err);
-      alert('상품 삭제에 실패했습니다.');
-    }
-  };
-
   const handleItemDelete = async (itemId) => {
+    const token = checkToken();
+    if (!token) return;
+
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/cart/${itemId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+      await axios.delete('https://project-be.site/api/mypage/deleteCartItems', {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { cartId: itemId }
       });
 
       setCartItems(cartItems.filter(item => item.id !== itemId));
       setSelectedItems(selectedItems.filter(id => id !== itemId));
     } catch (err) {
-      console.error('Error deleting item:', err);
+      if (err.response?.status === 401) {
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+      console.error('상품 삭제 실패:', err);
       alert('상품 삭제에 실패했습니다.');
     }
   };
-
-  if (isLoading) {
-    return <div>로딩 중...</div>;
-  }
 
   const handlePayment = () => {
     if (selectedItems.length === 0) {
@@ -124,8 +125,22 @@ const Cart = () => {
       return;
     }
 
+    const selectedProducts = cartItems
+      .filter(item => selectedItems.includes(item.id))
+      .map(item => ({
+        cartId: item.id,       
+        bookId: item.bookId,     
+        title: item.title,        
+        price: item.price,        
+        quantity: item.quantity,
+        totalPrice: item.price * item.quantity,  
+        image: item.image,        
+        publisher: item.publisher, 
+        author: item.author      
+      }));
+
     const paymentData = {
-      items: cartItems.filter(item => selectedItems.includes(item.id)),
+      orderItems: selectedProducts,
       totalPrice: calculateTotalPrice(),
       deliveryFee: calculateTotalDelivery(),
       totalAmount: calculateTotalPrice() + calculateTotalDelivery()
@@ -133,15 +148,6 @@ const Cart = () => {
 
     navigate('/payment', { state: paymentData });
   };
-
-
-  // const updateItemQuantity = (itemId, newQuantity) => {
-  //   setCartItems(cartItems.map(item => 
-  //     item.id === itemId 
-  //       ? { ...item, quantity: newQuantity }
-  //       : item
-  //   ));
-  // };
   
   const calculateTotalPrice = () => {
     return cartItems
@@ -161,19 +167,47 @@ const Cart = () => {
     }
   };
 
-  // const handleSelectedDelete = () => {
-  //   if (selectedItems.length === 0) {
-  //     alert('선택된 상품이 없습니다.');
-  //     return;
-  //   }
-  //   setCartItems(cartItems.filter(item => !selectedItems.includes(item.id)));
-  //   setSelectedItems([]);
-  // };
+  const handleSelectedDelete = async () => {
+    const token = checkToken();
+    if (!token) return;
+  
+    if (selectedItems.length === 0) {
+      alert('선택된 상품이 없습니다.');
+      return;
+    }
+  
+    try {
+      for (const itemId of selectedItems) {
+        await axios.delete('https://project-be.site/api/mypage/deleteCartItems', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          data: { cartId: itemId }
+        });
+      }
+  
+      setCartItems(cartItems.filter(item => !selectedItems.includes(item.id)));
+      setSelectedItems([]);
+      
+    } catch (err) {
+      if (err.response?.status === 401) {
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
+      }
+      console.error('선택 삭제 실패:', err);
+      alert('선택한 상품 삭제에 실패했습니다.');
+    }
+  };
 
-  // const handleItemDelete = (itemId) => {
-  //   setCartItems(cartItems.filter(item => item.id !== itemId));
-  //   setSelectedItems(selectedItems.filter(id => id !== itemId));
-  // };
+  const handleSelectedOrder = () => {
+    if (selectedItems.length === 0) {
+      alert('선택된 상품이 없습니다.');
+      return;
+    }
+    handlePayment();
+  };
 
   return (
     <Wrapper>
@@ -194,7 +228,9 @@ const Cart = () => {
                   <SelectButton onClick={handleSelectAll}>
                     전체선택
                   </SelectButton>
-                  <CategoryButton>선택주문</CategoryButton>
+                  <CategoryButton onClick={handleSelectedOrder}>
+                    선택주문
+                  </CategoryButton>
                   <CategoryButton onClick={handleSelectedDelete}>
                     선택삭제
                   </CategoryButton>
@@ -237,6 +273,7 @@ export default Cart;
 const Wrapper = styled.div`
   padding: 0 120px;
   width: 100%;
+  margin-top: 302px;
   display: flex;
   justify-content: center;
   
