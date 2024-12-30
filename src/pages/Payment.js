@@ -70,6 +70,8 @@ const Payment = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const token = localStorage.getItem("bearer_token");
+
   const location = useLocation();
 
   const paymentData = location.state || {};

@@ -9,6 +9,7 @@ import SignupConfirmModal from "../components/modal/SignupConfirmModal";
 import { useDispatch, useSelector } from "react-redux";
 import { openModal, closeModal } from "../features/modalSlice";
 import { useNavigate } from "react-router-dom"; // useNavigate 임포트
+import axios from "axios";
 
 const MyPage = () => {
   const [selectedMenu, setSelectedMenu] = useState("myinfo");
