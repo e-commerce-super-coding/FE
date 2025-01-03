@@ -67,10 +67,9 @@ const Payment = () => {
 
   const [shippingMode, setShippingMode] = useState(0); // Shipping radio - 읽기모드(0), 쓰기 모드(1)
 
+  const [token, setToken] = useState(localStorage.getItem("bearer_token"));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  const token = localStorage.getItem("bearer_token");
 
   const location = useLocation();
 
@@ -276,6 +275,7 @@ const Payment = () => {
       </PaymentContents>
       <PaymentAmount>
         <TotalPayment
+          token={token}
           paymentInfo={paymentInfo}
           getPaymentData={getPaymentData}
         />

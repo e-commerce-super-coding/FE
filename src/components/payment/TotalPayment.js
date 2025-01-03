@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import { useNavigate } from "react-router";
+import axios from "axios";
 
-const PaymentAmount = ({ paymentInfo, getPaymentData }) => {
+const PaymentAmount = ({ token, paymentInfo, getPaymentData }) => {
   const [isAgreeChecked, setIsAgreeChecked] = useState(false);
   const [modalType, setModalType] = useState(""); // "payment" 또는 "success"
   const [isIamportLoaded, setIsIamportLoaded] = useState(false);
@@ -63,15 +64,54 @@ const PaymentAmount = ({ paymentInfo, getPaymentData }) => {
         buyer_postcode: zipCode,
       },
       // POST API 여기서부터터 아래까지 삭제하고 복붙해넣으시면 됩니다!
-      (rsp) => {
+      // (rsp) => {
+      //   if (rsp.success) {
+      //     setModalType("success");
+
+      //     setTimeout(() => navigate("/mypage"), 2000);
+      //   } else {
+      //     alert(`결제에 실패하였습니다. 에러 내용: ${rsp.error_msg}`);
+      //   }
+      // } // 여기까지
+      async (rsp) => {
         if (rsp.success) {
           setModalType("success");
 
-          setTimeout(() => navigate("/mypage"), 2000);
+          // 결제 완료 후 API로 결제 정보 전송
+          try {
+            const response = await axios.post(
+              "https://project-be.site/payments/process",
+              {
+                userId,
+                impUid: rsp.imp_uid, // 아임포트 고유 ID
+                merchantUid: rsp.merchant_uid, // 상점 거래 ID
+                paymentCard: cardNumbers, // 화면에 쓴 것...
+                zipCode,
+                mainAddress,
+                detailsAddress,
+                receiverName: buyerName,
+                receiverPhone: buyerPhone,
+              },
+              {
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`, // 토큰 추가
+                },
+              }
+            );
+
+            console.log("결제 정보 서버 전송 완료:", response.data);
+
+            // 결제 완료 후 페이지 이동
+            setTimeout(() => navigate("/mypage"), 2000);
+          } catch (error) {
+            console.error("결제 API 호출 오류:", error);
+            alert("결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+          }
         } else {
           alert(`결제에 실패하였습니다. 에러 내용: ${rsp.error_msg}`);
         }
-      } // 여기까지
+      }
     );
   };
 
