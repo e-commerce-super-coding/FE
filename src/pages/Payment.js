@@ -78,7 +78,7 @@ const Payment = () => {
     orderItemsData: [],
     totalPrice: 0,
     deliveryFee: 0,
-    totalAmount: 0
+    totalAmount: 0,
   };
   const { orderItemsData, totalPrice, deliveryFee, totalAmount } = paymentData;
 
@@ -87,45 +87,85 @@ const Payment = () => {
 
   // 더미 데이터를 사용하여 컴포넌트 상태 업데이트
   useEffect(() => {
-    // 회원 정보 - 더미로 가지고 옴. - 삭제 후 GET API 추가하기기
-    // GET 회원정보 API
-    // 여기서부터
-    setTimeout(() => {
-      setUserInfo(dummyUserInfo);
-      const newDummy = { ...dummyUserInfo };
-      setReceiverInfo(newDummy);
-    }, 1000); // 1초 후 더미 데이터 설정
-    // 여기까지 삭제 후 복붙!
+    const fetchUserInfo = async () => {
+      try {
+        // 토큰 가져오기
+        // const token = localStorage.getItem("token");
+        console.log("token:", token);
+        if (!token) throw new Error("Payment 로그인이 필요합니다.");
 
-    if (selectCartItems.length > 0) {
-      const filteredItems = selectCartItems.map((item) => ({
-        bookId: item.bookId,
-        title: item.title,
-        price: item.price,
-        imageUrl: item.bookImage,
-        quantity: item.quantity,
-      }));
+        // API 호출
+        const response = await axios.get(
+          "https://project-be.site/api/mypage/getUserInfo",
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-      setOrderItems(filteredItems);
+        // 유저 데이터 추출
+        const userData = response.data.data;
 
-      // cart에서 못받아왔을 때... dummy data 총가격, 배송비
-      const totalPrice = filteredItems.reduce(
-        (sum, item) => sum + item.price * item.quantity,
-        0
-      );
-      const shippingFee = totalPrice > MIN_ORDER_AMOUNT ? 0 : SHIPPING_FEE;
+        // 필요한 필드만 매핑
+        const userInfo = {
+          userId: userData.userId,
+          email: userData.email,
+          name: userData.userName,
+          phone: userData.phone,
+          zipCode: userData.zipCode,
+          mainAddress: userData.mainAddress,
+          detailsAddress: userData.detailsAddress,
+        };
 
-      setPaymentInfo((prevInfo) => ({
-        ...prevInfo,
-        totalPrice,
-        shippingFee,
-      }));
-    } else {
-      setError("해당 책을 찾을 수 없습니다.");
-    }
+        // 상태 업데이트
+        setUserInfo(userInfo);
+        const newInfo = { ...userInfo };
+        setReceiverInfo(newInfo); // 수령인 정보도 기본적으로 회원 정보로 초기화
+      } catch (error) {
+        console.error("회원 정보를 가져오는 데 실패했습니다:", error.message);
+        setError("회원 정보를 가져오는 데 실패했습니다.");
+      }
+    };
+
+    const fetchOrderItems = () => {
+      if (selectCartItems.length > 0) {
+        const filteredItems = selectCartItems.map((item) => ({
+          bookId: item.bookId,
+          title: item.title,
+          price: item.price,
+          imageUrl: item.bookImage,
+          quantity: item.quantity,
+        }));
+
+        setOrderItems(filteredItems);
+
+        // cart에서 못받아왔을 때... dummy data 총가격, 배송비
+        const totalPrice = filteredItems.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
+        const shippingFee = totalPrice > MIN_ORDER_AMOUNT ? 0 : SHIPPING_FEE;
+
+        setPaymentInfo((prevInfo) => ({
+          ...prevInfo,
+          totalPrice,
+          shippingFee,
+        }));
+      } else {
+        setError("해당 책을 찾을 수 없습니다.");
+      }
+    };
+
+    setLoading(true);
+
+    // 비동기 작업 실행
+    fetchUserInfo();
+    fetchOrderItems();
 
     setLoading(false);
-  }, [orderItemsData]);
+  }, [selectCartItems]);
 
   // console.log("Payment-userInfo: ", userInfo);
   // console.log("Payment-receiverInfo: ", receiverInfo);
@@ -156,7 +196,8 @@ const Payment = () => {
 
     const firstBookTitle =
       orderItemsData.length > 0 ? orderItemsData[0].title : "데이터 없음";
-    const otherBookCount = orderItemsData.length > 1 ? orderItemsData.length - 1 : 0;
+    const otherBookCount =
+      orderItemsData.length > 1 ? orderItemsData.length - 1 : 0;
 
     const totalAmount = paymentInfo.totalPrice + paymentInfo.shippingFee;
 
@@ -227,7 +268,10 @@ const Payment = () => {
           onShippingModeChange={onShippingModeChange}
           onInfoChange={handleInfoChange}
         />
-        <OrderItems items={orderItemsData} shippingFee={paymentInfo.shippingFee} />
+        <OrderItems
+          items={orderItemsData}
+          shippingFee={paymentInfo.shippingFee}
+        />
         <PaymentMethod onCardNumbersChange={handleCardNumbersChange} />
       </PaymentContents>
       <PaymentAmount>
