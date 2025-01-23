@@ -6,7 +6,8 @@ import styled from "styled-components";
 import Order from "../components/Cart/Order";
 import CartItemList from "../components/Cart/CartItemList";
 import CartItemAmount from "../components/Cart/CartItemAmount";
-import ShoppingCartIcon from "../icons/shopping-cart.svg";
+import CartActions from "../components/Cart/CartActions";
+import EmptyCart from "../components/Cart/EmptyCart";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -214,27 +215,13 @@ const Cart = () => {
           <CartContent>
             {cartItems.length > 0 ? (
               <>
-                <CartCategory>
-                  <SelectButton>
-                    <input
-                      type="checkbox"
-                      checked={
-                        cartItems.length > 0 &&
-                        selectedItems.length === cartItems.length
-                      }
-                      onChange={handleSelectAll}
-                    />
-                  </SelectButton>
-                  <SelectButton onClick={handleSelectAll}>
-                    전체선택
-                  </SelectButton>
-                  <CategoryButton onClick={handleSelectedOrder}>
-                    선택주문
-                  </CategoryButton>
-                  <CategoryButton onClick={handleSelectedDelete}>
-                    선택삭제
-                  </CategoryButton>
-                </CartCategory>
+                <CartActions
+                  handleSelectAll={handleSelectAll}
+                  handleSelectedOrder={handleSelectedOrder}
+                  handleSelectedDelete={handleSelectedDelete}
+                  selectedItems={selectedItems}
+                  cartItems={cartItems}
+                />
                 <CartItemList
                   items={cartItems}
                   selectedItems={selectedItems}
@@ -248,17 +235,7 @@ const Cart = () => {
                 />
               </>
             ) : (
-              <CartComment>
-                <CartIcon>
-                  <img
-                    src={ShoppingCartIcon}
-                    alt="icon"
-                    width="150px"
-                    height="150px"
-                  />
-                </CartIcon>
-                <IconComment>장바구니에 담긴 상품이 없습니다</IconComment>
-              </CartComment>
+              <EmptyCart />
             )}
           </CartContent>
           <Order
@@ -287,6 +264,7 @@ const Wrapper = styled.div`
     padding: 0 20px;
   }
 `;
+
 const CartContainer = styled.div`
   width: 100%;
   max-width: 1200px;
@@ -298,11 +276,12 @@ const CartContainer = styled.div`
   flex: 1;
   position: relative;
   min-height: calc(100vh - 402px);
-  
+
   @media (max-width: 968px) {
     flex-direction: column;
   }
 `;
+
 const CartContents = styled.div`
   display: flex;
   flex: 1;
@@ -311,6 +290,7 @@ const CartContents = styled.div`
     flex-direction: column;
   }
 `;
+
 const CartContent = styled.div`
   width: 830px;
   max-width: 900px;
@@ -320,6 +300,7 @@ const CartContent = styled.div`
     max-width: 100%;
   }
 `;
+
 const CartTitle = styled.div`
   width: 100%;
   height: 100px;
@@ -333,37 +314,4 @@ const CartTitle = styled.div`
     font-size: 2rem;
     height: 80px;
   }
-`;
-const CartCategory = styled.div`
-  width: 830px;
-  height: 60px;
-  display: flex;
-  padding-top: 20px;
-  background-color: #f5f5f5;
-`;
-const SelectButton = styled.div`
-  cursor: pointer;
-  font-size: 1rem;
-  padding-left: 10px;
-`;
-const CategoryButton = styled.div`
-  cursor: pointer;
-  font-size: 1rem;
-  margin-left: 30px;
-`;
-const CartComment = styled.div`
-  margin-top: 30px;
-`;
-const CartIcon = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 200px;
-`;
-const IconComment = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 50px;
-  font-size: 1.8rem;
 `;
