@@ -20,6 +20,13 @@ const LeftContainer = styled.div`
   height: 300px;
   background-color: #eaeaea;
   border-radius: 8px;
+  transition: transform 0.2s, background-color 0.2s;
+  cursor: pointer;
+
+  &:hover {
+    transform: scale(1.05);
+    background-color: #d0d0d0;
+  }
 `;
 
 const RightContainer = styled.div`
@@ -78,6 +85,11 @@ const QuantityButton = styled.button`
   border-radius: 4px;
   font-size: 18px;
   cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #bbb;
+  }
 `;
 
 const QuantityDisplay = styled.p`
@@ -97,6 +109,7 @@ const Button = styled.button`
   border: none;
   border-radius: 8px;
   color: #fff;
+  cursor: pointer; /* 모든 버튼에 공통 적용 */
 
   ${({ variant }) =>
     variant === "buy"
@@ -106,6 +119,10 @@ const Button = styled.button`
       : `
       background-color: #6c757d;
     `}
+
+  &:hover {
+    opacity: 0.9; /* 마우스 오버 시 모든 버튼에 반응 */
+  }
 `;
 
 // 메인 컴포넌트
@@ -115,11 +132,11 @@ const Detail = () => {
 
   // 샘플 데이터
   const book = {
-    title: "",
-    author: "",
-    publisher: "",
-    price: "",
-    description: "",
+    title: "예제 도서",
+    author: "홍길동",
+    publisher: "예제 출판사",
+    price: 15000,
+    description: "이것은 예제 도서의 설명입니다.",
   };
 
   const handleBuyNow = () => {
